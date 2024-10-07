@@ -1,10 +1,14 @@
 'use strict';
 
 // Load AWS APIs
-const AWS = require('aws-sdk');
+const {
+  LightsailClient,
+  GetInstanceSnapshotsCommand,
+  CreateInstanceSnapshotCommand,
+  DeleteInstanceSnapshotCommand
+} = require('@aws-sdk/client-lightsail');
 // TODO enable different regions.
-AWS.config.update({region: 'us-east-1'});
-const lightsail = new AWS.Lightsail();
+const lightsail = new LightsailClient({ region: 'us-east-1' });
 
 /**
  * (Required) List of target instances that should be backed up. Provide via
@@ -71,14 +75,16 @@ async function loadBackups() {
   let page = 1;
   console.log(`Loading all snapshots (page ${page})`);
 
-  let result = (await lightsail.getInstanceSnapshots().promise());
+  let command = new GetInstanceSnapshotsCommand({});
+  let result = await lightsail.send(command);
   let snapshots = result.instanceSnapshots;
 
   // Get all pages, if applicable.
   while (result.nextPageToken) {
     page++;
     console.log(`Loading all snapshots (page ${page})`);
-    result = (await lightsail.getInstanceSnapshots({pageToken: result.nextPageToken}).promise());
+    command = new GetInstanceSnapshotsCommand({pageToken: result.nextPageToken});
+    result = await lightsail.send(command);
     snapshots = snapshots.concat(result.instanceSnapshots);
   }
 
@@ -142,13 +148,13 @@ function createBackup(instance) {
     instanceSnapshotName: name
   };
 
-  lightsail.createInstanceSnapshot(params, function(err, data) {
-    if (err) {
-      console.error(`${instance}: Error creating snapshot`, err);
-    } else {
-      console.log(`${instance}: Snapshot ${name} created`);
-    }
-  });
+  const command = new CreateInstanceSnapshotCommand(params);
+  try {
+    lightsail.send(command);
+    console.log(`${instance}: Snapshot ${name} created`);
+  } catch (err) {
+    console.error(`${instance}: Error creating snapshot`, err);
+  }
 }
 
 function pruneBackups(instance) {
@@ -195,12 +201,12 @@ function deleteSnapshot(snapshot) {
   let params = {
     instanceSnapshotName: snapshot.name
   };
-
-  lightsail.deleteInstanceSnapshot(params, function(err, data) {
-    if (err) {
-      console.error(`${snapshot.fromInstanceName}: Error deleting snapshot ${snapshot.name}`, err);
-    } else {
-      console.log(`${snapshot.fromInstanceName}: Snapshot ${snapshot.name} deleted`);
-    }
-  });
+  
+  const command = new DeleteInstanceSnapshotCommand(params);
+  try {
+    lightsail.send(command);
+    console.log(`${snapshot.fromInstanceName}: Snapshot ${snapshot.name} deleted`);
+  } catch (err) {
+    console.error(`${snapshot.fromInstanceName}: Error deleting snapshot ${snapshot.name}`, err);
+  }
 }

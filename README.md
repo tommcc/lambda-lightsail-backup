@@ -51,7 +51,7 @@ Inspired by/based on [vidanov/lambda-nodejs-lightsail-backup](https://github.com
  1. Click **Create Function**.
  1. from the preselected **Author From Scratch** tab:
     - Set the name to **`lightsail-backups`**.
-    - Set the runtime to **Node.js 8.10**.
+    - Set the runtime to **Node v20**.
     - Select the existing role **`LightsailSnapshotsRole`** you created in the step 2.
  1. Click **Create Function**.
  1. In the design panel, click **Add triggers**, then **CloudWatch Event**.
